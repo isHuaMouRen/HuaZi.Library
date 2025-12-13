@@ -2,7 +2,7 @@
 <package>
     <metadata>
         <id>HuaZi.Library</id>
-        <version>2025.11.27.01</version>
+        <version>2025.12.13.01</version>
         <authors>华某人</authors>
         <owners>华某人</owners>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -10,19 +10,37 @@
         <tags>工具 库 C# .NET</tags>
         <license type="expression">MIT</license>
         <projectUrl>https://github.com/isHuaMouRen/HuaZi.Library</projectUrl>
-        <iconUrl>
-            https://raw.githubusercontent.com/isHuaMouRen/HuaZi.Library/refs/heads/main/cover.png</iconUrl>
+        <icon>cover.png</icon>
         <repository type="git" url="https://github.com/isHuaMouRen/HuaZi.Library.git"
             branch="main" />
         <readme>README.nuget.md</readme>
 
         <dependencies>
-            <dependency id="Newtonsoft.Json" version="13.*" />
+            <group targetFramework="net6.0">
+                <dependency id="Newtonsoft.Json" version="13.*" />
+            </group>
+            <group targetFramework="net7.0">
+                <dependency id="Newtonsoft.Json" version="13.*" />
+            </group>
+            <group targetFramework="net8.0">
+                <dependency id="Newtonsoft.Json" version="13.*" />
+            </group>
+            <group targetFramework="net9.0">
+                <dependency id="Newtonsoft.Json" version="13.*" />
+            </group>
+            <group targetFramework="net10.0">
+                <dependency id="Newtonsoft.Json" version="13.*" />
+            </group>
         </dependencies>
     </metadata>
 
-    <files> 
-        <file src="HuaZi.Library\bin\Release\net8.0\HuaZi.Library.dll" target="lib\net8.0-windows7.0" />
+    <files>
+        <file src="HuaZi.Library\bin\Release\net6.0\HuaZi.Library.dll" target="lib\net6.0" />
+        <file src="HuaZi.Library\bin\Release\net7.0\HuaZi.Library.dll" target="lib\net7.0" />
+        <file src="HuaZi.Library\bin\Release\net8.0\HuaZi.Library.dll" target="lib\net8.0" />
+        <file src="HuaZi.Library\bin\Release\net9.0\HuaZi.Library.dll" target="lib\net9.0" />
+        <file src="HuaZi.Library\bin\Release\net10.0\HuaZi.Library.dll" target="lib\net10.0" />
         <file src="README.nuget.md" target="" />
+        <file src="cover.png" target="" />
     </files>
 </package>
