@@ -7,22 +7,35 @@ namespace HuaZi.Library.Downloader
     /// </summary>
     public class Downloader : IDisposable
     {
-        private static readonly HttpClient HttpClient = new(
-            new HttpClientHandler
+        private static readonly HttpClient HttpClient;
+
+        static Downloader()
+        {
+            var handler = new HttpClientHandler
             {
                 AutomaticDecompression =
                     System.Net.DecompressionMethods.GZip |
                     System.Net.DecompressionMethods.Deflate
-            })
-        {
-            Timeout = Timeout.InfiniteTimeSpan
-        };
+            };
+
+            if (!SSLCertificateValidation)
+            {
+                handler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
+
+            HttpClient = new HttpClient(handler)
+            {
+                Timeout = Timeout.InfiniteTimeSpan
+            };
+        }
 
         public string Url { get; init; } = "";
         public string SavePath { get; init; } = "";
         public Action<double, double>? Progress { get; init; }   // (progress%, speed KB/s)
         public Action<bool, string?>? Completed { get; init; }   // (success, error)
         public int ReportIntervalMs { get; init; } = 200;        // 回调频率
+        public static bool SSLCertificateValidation { get; set; } = true; //SSL证书检测
 
         private CancellationTokenSource? _cts;
         private Task? _task;
