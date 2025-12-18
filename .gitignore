@@ -27,4 +27,4 @@ publish/
 *.dbmdl
 *.bak
 *.tmp
-Nuget-Push.bat
+push.bat
