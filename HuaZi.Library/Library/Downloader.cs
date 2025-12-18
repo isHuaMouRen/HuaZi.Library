@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace HuaZi.Library.Downloader
 {
@@ -7,9 +9,18 @@ namespace HuaZi.Library.Downloader
     /// </summary>
     public class Downloader : IDisposable
     {
-        private static readonly HttpClient HttpClient;
+        public string Url { get; init; } = "";
+        public string SavePath { get; init; } = "";
+        public Action<double, double>? Progress { get; init; } // (progress%, speed KB/s)
+        public Action<bool, string?>? Completed { get; init; } // (success, error)
+        public int ReportIntervalMs { get; init; } = 200;     // 进度回调频率（毫秒）
+        public bool IgnoreSslErrors { get; init; } = false;    // 是否忽略 SSL 证书验证错误（仅用于开发/测试）
 
-        static Downloader()
+        private readonly HttpClient _httpClient;
+        private CancellationTokenSource? _cts;
+        private Task? _task;
+
+        public Downloader()
         {
             var handler = new HttpClientHandler
             {
@@ -18,52 +29,39 @@ namespace HuaZi.Library.Downloader
                     System.Net.DecompressionMethods.Deflate
             };
 
-            if (!SSLCertificateValidation)
+            if (IgnoreSslErrors)
             {
                 handler.ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
             }
 
-            HttpClient = new HttpClient(handler)
+            _httpClient = new HttpClient(handler)
             {
                 Timeout = Timeout.InfiniteTimeSpan
             };
         }
 
-        public string Url { get; init; } = "";
-        public string SavePath { get; init; } = "";
-        public Action<double, double>? Progress { get; init; }   // (progress%, speed KB/s)
-        public Action<bool, string?>? Completed { get; init; }   // (success, error)
-        public int ReportIntervalMs { get; init; } = 200;        // 回调频率
-        public static bool SSLCertificateValidation { get; set; } = true; //SSL证书检测
-
-        private CancellationTokenSource? _cts;
-        private Task? _task;
-
-        /// <summary>
-        /// 开始下载
-        /// </summary>
         public void StartDownload()
         {
-            if (string.IsNullOrWhiteSpace(Url)) throw new InvalidOperationException("Url 未设置");
-            if (string.IsNullOrWhiteSpace(SavePath)) throw new InvalidOperationException("SavePath 未设置");
-            if (_task?.IsCompleted == false) throw new InvalidOperationException("已在下载");
+            if (string.IsNullOrWhiteSpace(Url))
+                throw new InvalidOperationException("Url 未设置");
+            if (string.IsNullOrWhiteSpace(SavePath))
+                throw new InvalidOperationException("SavePath 未设置");
+            if (_task?.IsCompleted == false)
+                throw new InvalidOperationException("已在下载");
 
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
             _task = DownloadAsync(_cts.Token);
         }
 
-        /// <summary>
-        /// 停止下载
-        /// </summary>
         public void StopDownload() => _cts?.Cancel();
 
         private async Task DownloadAsync(CancellationToken ct)
         {
             try
             {
-                using var response = await HttpClient.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead, ct);
+                using var response = await _httpClient.GetAsync(Url, HttpCompletionOption.ResponseHeadersRead, ct);
                 response.EnsureSuccessStatusCode();
 
                 var total = response.Content.Headers.ContentLength ?? -1;
@@ -72,8 +70,8 @@ namespace HuaZi.Library.Downloader
                 Directory.CreateDirectory(Path.GetDirectoryName(SavePath)!);
                 if (File.Exists(SavePath)) File.Delete(SavePath);
 
-                using var stream = await response.Content.ReadAsStreamAsync(ct);
                 await using var file = new FileStream(SavePath, FileMode.Create, FileAccess.Write, FileShare.None, 32768, true);
+                using var stream = await response.Content.ReadAsStreamAsync(ct);
 
                 var buffer = new byte[32768];
                 long readTotal = 0;
@@ -91,7 +89,6 @@ namespace HuaZi.Library.Downloader
                     {
                         var percent = readTotal * 100.0 / total;
                         var speed = (readTotal - lastBytes) / ((sw.Elapsed.TotalMilliseconds - lastTime) / 1000.0) / 1024.0;
-
                         Progress?.Invoke(percent, speed);
 
                         lastBytes = readTotal;
@@ -101,7 +98,6 @@ namespace HuaZi.Library.Downloader
 
                 Progress?.Invoke(100.0, 0.0);
                 Completed?.Invoke(true, null);
-
             }
             catch (OperationCanceledException)
             {
@@ -117,6 +113,7 @@ namespace HuaZi.Library.Downloader
         {
             _cts?.Cancel();
             _cts?.Dispose();
+            _httpClient.Dispose();
         }
     }
 }

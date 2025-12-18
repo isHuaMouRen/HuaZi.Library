@@ -1,5 +1,6 @@
 using HuaZi.Library.Downloader;
 using HuaZi.Library.Logger;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -26,6 +27,11 @@ namespace Tester
             logger.Error("erRor");
             logger.Fatal("fATal");
             logger.Debug("dEBug");
+
+            var downloader = new Downloader
+            {
+                IgnoreSslErrors = true
+            };
         }
     }
 }
